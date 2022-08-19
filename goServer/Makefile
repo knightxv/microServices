@@ -5,14 +5,14 @@ GOPATH:=$(shell go env GOPATH)
 
 
 proto:
-	protoc --proto_path=${GOPATH}/src:. --micro_out=. --go_out=. proto/example/example.proto
+	protoc --proto_path=${GOPATH}/src:. --micro_out=. --go_out=. proto/goServer.proto
 
 build: proto
 
-	go build -o PostAvatar-srv main.go plugin.go
+	go build -o goServer main.go
 
 test:
 	go test -v ./... -cover
 
 docker:
-	docker build . -t PostAvatar-srv:latest
+	docker build . -t goServer:latest

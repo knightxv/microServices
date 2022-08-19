@@ -1,12 +1,41 @@
-version: "3.7"
+version: "3.3"
 
 services:
-  docs:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: dev
-    ports:
-      - 8000:8000
-    volumes:
-      - ./:/app
+    # consul:
+    #     #镜像：镜像名称:版本号
+    #     image: consul:latest
+    #     #主机名
+    #     hostname: "registry"
+    #     #暴露端口
+    #     ports:
+    #         - "8300:8300"
+    #         - "8400:8400"
+    #         - "8500:8500"
+    #         - "8600:53/udp"
+    #     container_name: consul
+    # web:
+    #     build:
+    #       context: ./web
+    #       dockerfile: Dockerfile
+    #       target: app
+    #     ports:
+    #       - 8000:8000
+    #     links:
+    #       - consul
+
+    node_server:
+        build:
+            context: ./nodeServer
+            dockerfile: Dockerfile
+            target: app
+        ports:
+            - 8000:8000
+# goServer:
+#     build:
+#         context: ./goServer
+#         dockerfile: Dockerfile
+#         target: dev
+#     links:
+#         - consul
+
+# consul11  | /usr/local/bin/docker-entrypoint.sh: exec: line 114: agent -server -bootstrap-expect=1  -node=node1 -client 0.0.0.0 -ui -bind=0.0.0.0 -join 127.0.0.2: not found
