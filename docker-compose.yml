@@ -13,6 +13,36 @@ services:
     #         - "8500:8500"
     #         - "8600:53/udp"
     #     container_name: consul
+
+    # node_server:
+    #     image: node:16-alpine
+    #     container_name: node_server
+    #     ports:
+    #         - 8000:8000
+    #     volumes:
+    #         - ./nodeServer/src:/app
+    #     working_dir: /app
+    #     command: npm run dev
+    #     depends_on:
+    #         - consul
+    #     links:
+    #         - consul
+
+    go_server:
+        image: alpine
+        container_name: go_server
+        build:
+            context: ./goServer
+            dockerfile: Dockerfile
+            target: app
+        # command: app
+        # ports:
+        #     - 8080:8080
+        # depends_on:
+        #     - consul
+        # links:
+        #     - consul
+
     # web:
     #     build:
     #       context: ./web
@@ -22,20 +52,3 @@ services:
     #       - 8000:8000
     #     links:
     #       - consul
-
-    node_server:
-        build:
-            context: ./nodeServer
-            dockerfile: Dockerfile
-            target: app
-        ports:
-            - 8000:8000
-# goServer:
-#     build:
-#         context: ./goServer
-#         dockerfile: Dockerfile
-#         target: dev
-#     links:
-#         - consul
-
-# consul11  | /usr/local/bin/docker-entrypoint.sh: exec: line 114: agent -server -bootstrap-expect=1  -node=node1 -client 0.0.0.0 -ui -bind=0.0.0.0 -join 127.0.0.2: not found
