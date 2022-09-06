@@ -1,12 +1,13 @@
 package http
 
 import (
-	"Open_IM/pkg/common/constant"
 	"fmt"
+	"micro_servers/pkg/common/constant"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	//"Open_IM/pkg/cms_api_struct"
+	//"micro_servers/pkg/cms_api_struct"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

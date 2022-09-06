@@ -1,9 +1,9 @@
 package log
 
 import (
-	"Open_IM/pkg/common/config"
 	"bufio"
 	"fmt"
+	"micro_servers/pkg/common/config"
 	"os"
 	"time"
 

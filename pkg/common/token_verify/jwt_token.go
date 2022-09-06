@@ -1,14 +1,15 @@
 package token_verify
 
 import (
-	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/constant"
-	commonDB "Open_IM/pkg/common/db"
-	"Open_IM/pkg/common/log"
-	"Open_IM/pkg/utils"
+	"micro_servers/pkg/common/config"
+	"micro_servers/pkg/common/constant"
+	commonDB "micro_servers/pkg/common/db"
+	"micro_servers/pkg/common/log"
+	"micro_servers/pkg/utils"
+	"time"
+
 	go_redis "github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
-	"time"
 )
 
 //var (

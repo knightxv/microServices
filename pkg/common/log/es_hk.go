@@ -7,15 +7,16 @@
 package log
 
 import (
-	"Open_IM/pkg/common/config"
 	"context"
 	"fmt"
-	elasticV7 "github.com/olivere/elastic/v7"
-	"github.com/sirupsen/logrus"
 	"log"
+	"micro_servers/pkg/common/config"
 	"os"
 	"strings"
 	"time"
+
+	elasticV7 "github.com/olivere/elastic/v7"
+	"github.com/sirupsen/logrus"
 )
 
 //esHook CUSTOMIZED ES hook

@@ -1,15 +1,15 @@
 package db
 
 import (
-	"Open_IM/pkg/common/config"
+	"micro_servers/pkg/common/config"
 	"strings"
 
 	"github.com/dtm-labs/rockscache"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 
-	//"Open_IM/pkg/common/log"
-	"Open_IM/pkg/utils"
+	//"micro_servers/pkg/common/log"
 	"fmt"
+	"micro_servers/pkg/utils"
 
 	go_redis "github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo/options"

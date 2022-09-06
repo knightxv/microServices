@@ -1,13 +1,14 @@
 package main
 
 import (
-	"Open_IM/internal/cms_api"
-	"Open_IM/pkg/utils"
 	"flag"
 	"fmt"
+	"micro_servers/internal/cms_api"
+	"micro_servers/pkg/utils"
 	"strconv"
 
-	"Open_IM/pkg/common/config"
+	"micro_servers/pkg/common/config"
+
 	"github.com/gin-gonic/gin"
 )
 

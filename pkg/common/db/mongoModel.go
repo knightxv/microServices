@@ -1,21 +1,22 @@
 package db
 
 import (
-	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/constant"
-	"Open_IM/pkg/common/log"
-	pbMsg "Open_IM/pkg/proto/msg"
-	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
-	"Open_IM/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
+	"micro_servers/pkg/common/config"
+	"micro_servers/pkg/common/constant"
+	"micro_servers/pkg/common/log"
+	pbMsg "micro_servers/pkg/proto/msg"
+	open_im_sdk "micro_servers/pkg/proto/sdk_ws"
+	"micro_servers/pkg/utils"
+	"sync"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/gogo/protobuf/sortkeys"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"math/rand"
-	"sync"
 
 	//"github.com/garyburd/redigo/redis"
 	"github.com/golang/protobuf/proto"

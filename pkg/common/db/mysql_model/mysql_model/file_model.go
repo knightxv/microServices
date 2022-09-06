@@ -1,7 +1,7 @@
 package mysql_model
 
 import (
-	"Open_IM/pkg/common/db"
+	"micro_servers/pkg/common/db"
 	"time"
 )
 

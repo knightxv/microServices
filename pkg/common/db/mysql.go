@@ -1,7 +1,7 @@
 package db
 
 import (
-	"Open_IM/pkg/common/config"
+	"micro_servers/pkg/common/config"
 
 	"gorm.io/gorm/logger"
 

@@ -1,22 +1,22 @@
 package main
 
 import (
-	_ "Open_IM/cmd/open_im_api/docs"
-	apiAuth "Open_IM/internal/api/auth"
-	"Open_IM/internal/api/conversation"
-	"Open_IM/internal/api/friend"
-	"Open_IM/internal/api/group"
-	"Open_IM/internal/api/manage"
-	apiChat "Open_IM/internal/api/msg"
-	"Open_IM/internal/api/office"
-	"Open_IM/internal/api/organization"
-	apiThird "Open_IM/internal/api/third"
-	"Open_IM/internal/api/user"
-	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/log"
-	"Open_IM/pkg/utils"
 	"flag"
 	"fmt"
+	_ "micro_servers/cmd/open_im_api/docs"
+	apiAuth "micro_servers/internal/api/auth"
+	"micro_servers/internal/api/conversation"
+	"micro_servers/internal/api/friend"
+	"micro_servers/internal/api/group"
+	"micro_servers/internal/api/manage"
+	apiChat "micro_servers/internal/api/msg"
+	"micro_servers/internal/api/office"
+	"micro_servers/internal/api/organization"
+	apiThird "micro_servers/internal/api/third"
+	"micro_servers/internal/api/user"
+	"micro_servers/pkg/common/config"
+	"micro_servers/pkg/common/log"
+	"micro_servers/pkg/utils"
 
 	//_ "github.com/razeencheng/demo-go/swaggo-gin/docs"
 	"io"
@@ -28,7 +28,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	//"syscall"
-	"Open_IM/pkg/common/constant"
+	"micro_servers/pkg/common/constant"
 )
 
 // @title open-IM-Server API
