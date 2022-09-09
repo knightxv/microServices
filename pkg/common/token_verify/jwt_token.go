@@ -3,12 +3,10 @@ package token_verify
 import (
 	"micro_servers/pkg/common/config"
 	"micro_servers/pkg/common/constant"
-	commonDB "micro_servers/pkg/common/db"
 	"micro_servers/pkg/common/log"
 	"micro_servers/pkg/utils"
 	"time"
 
-	go_redis "github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -21,16 +19,14 @@ import (
 //)
 
 type Claims struct {
-	UID      string
-	Platform string //login platform
+	UID string
 	jwt.RegisteredClaims
 }
 
-func BuildClaims(uid, platform string, ttl int64) Claims {
+func BuildClaims(uid string, ttl int64) Claims {
 	now := time.Now()
 	return Claims{
-		UID:      uid,
-		Platform: platform,
+		UID: uid,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(ttl*24) * time.Hour)), //Expiration time
 			IssuedAt:  jwt.NewNumericDate(now),                                        //Issuing time
@@ -38,51 +34,10 @@ func BuildClaims(uid, platform string, ttl int64) Claims {
 		}}
 }
 
-func DeleteToken(userID string, platformID int) error {
-	m, err := commonDB.DB.GetTokenMapByUidPid(userID, constant.PlatformIDToName(platformID))
-	if err != nil && err != go_redis.Nil {
-		return utils.Wrap(err, "")
-	}
-	var deleteTokenKey []string
-	for k, v := range m {
-		_, err = GetClaimFromToken(k)
-		if err != nil || v != constant.NormalToken {
-			deleteTokenKey = append(deleteTokenKey, k)
-		}
-	}
-	if len(deleteTokenKey) != 0 {
-		err = commonDB.DB.DeleteTokenByUidPid(userID, platformID, deleteTokenKey)
-		return utils.Wrap(err, "")
-	}
-	return nil
-}
-
-func CreateToken(userID string, platformID int) (string, int64, error) {
-	claims := BuildClaims(userID, constant.PlatformIDToName(platformID), config.Config.TokenPolicy.AccessExpire)
+func CreateToken(userID string) (string, int64, error) {
+	claims := BuildClaims(userID, config.Config.TokenPolicy.AccessExpire)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(config.Config.TokenPolicy.AccessSecret))
-	if err != nil {
-		return "", 0, err
-	}
-	//remove Invalid token
-	m, err := commonDB.DB.GetTokenMapByUidPid(userID, constant.PlatformIDToName(platformID))
-	if err != nil && err != go_redis.Nil {
-		return "", 0, err
-	}
-	var deleteTokenKey []string
-	for k, v := range m {
-		_, err = GetClaimFromToken(k)
-		if err != nil || v != constant.NormalToken {
-			deleteTokenKey = append(deleteTokenKey, k)
-		}
-	}
-	if len(deleteTokenKey) != 0 {
-		err = commonDB.DB.DeleteTokenByUidPid(userID, platformID, deleteTokenKey)
-		if err != nil {
-			return "", 0, err
-		}
-	}
-	err = commonDB.DB.AddTokenFlag(userID, platformID, tokenString, constant.NormalToken)
 	if err != nil {
 		return "", 0, err
 	}
@@ -120,35 +75,6 @@ func GetClaimFromToken(tokensString string) (*Claims, error) {
 	}
 }
 
-func IsAppManagerAccess(token string, OpUserID string) bool {
-	claims, err := ParseToken(token, "")
-	if err != nil {
-		return false
-	}
-	if utils.IsContain(claims.UID, config.Config.Manager.AppManagerUid) && claims.UID == OpUserID {
-		return true
-	}
-	return false
-}
-
-func IsManagerUserID(OpUserID string) bool {
-	if utils.IsContain(OpUserID, config.Config.Manager.AppManagerUid) {
-		return true
-	} else {
-		return false
-	}
-}
-
-func CheckAccess(OpUserID string, OwnerUserID string) bool {
-	if utils.IsContain(OpUserID, config.Config.Manager.AppManagerUid) {
-		return true
-	}
-	if OpUserID == OwnerUserID {
-		return true
-	}
-	return false
-}
-
 func GetUserIDFromToken(token string, operationID string) (bool, string, string) {
 	claims, err := ParseToken(token, operationID)
 	if err != nil {
@@ -168,56 +94,20 @@ func GetUserIDFromTokenExpireTime(token string, operationID string) (bool, strin
 	return true, claims.UID, "", claims.ExpiresAt.Unix()
 }
 
-func ParseTokenGetUserID(token string, operationID string) (error, string) {
+func ParseTokenGetUserID(token string, operationID string) (string, error) {
 	claims, err := ParseToken(token, operationID)
 	if err != nil {
-		return utils.Wrap(err, ""), ""
+		return "", utils.Wrap(err, "")
 	}
-	return nil, claims.UID
+	return claims.UID, nil
 }
 
-func ParseToken(tokensString, operationID string) (claims *Claims, err error) {
+func ParseToken(tokensString, _ string) (claims *Claims, err error) {
 	claims, err = GetClaimFromToken(tokensString)
 	if err != nil {
-		//if errors.Is(err, constant.ErrTokenUnknown) {
-		//	errMsg := "GetClaimFromToken failed ErrTokenUnknown   " + err.Error()
-		//	log.Error(operationID, errMsg)
-		//}
-		//info := err.(constant.ErrInfo)
-		//log.Error(operationID, "detail info , ", info.ErrCode, info.ErrMsg)
-		//
-		//e := errors.Unwrap(err)
-		//if errors.Is(e, constant.ErrTokenUnknown) {
-		//	errMsg := "ParseToken failed ErrTokenUnknown " + e.Error()
-		//	log.Error(operationID, errMsg)
-		//}
-
 		return nil, utils.Wrap(err, "")
 	}
-
-	m, err := commonDB.DB.GetTokenMapByUidPid(claims.UID, claims.Platform)
-	if err != nil {
-		log.NewError(operationID, "get token from redis err", err.Error(), tokensString)
-		return nil, utils.Wrap(constant.ErrTokenInvalid, "get token from redis err")
-	}
-	if m == nil {
-		log.NewError(operationID, "get token from redis err, not in redis ", "m is nil", tokensString)
-		return nil, utils.Wrap(constant.ErrTokenInvalid, "get token from redis err")
-	}
-	if v, ok := m[tokensString]; ok {
-		switch v {
-		case constant.NormalToken:
-			log.NewDebug(operationID, "this is normal return", claims)
-			return claims, nil
-		case constant.KickedToken:
-			log.Error(operationID, "this token has been kicked by other same terminal ", constant.ErrTokenKicked)
-			return nil, utils.Wrap(constant.ErrTokenKicked, "this token has been kicked by other same terminal ")
-		default:
-			return nil, utils.Wrap(constant.ErrTokenUnknown, "")
-		}
-	}
-	log.NewError(operationID, "redis token map not find", constant.ErrTokenUnknown)
-	return nil, utils.Wrap(constant.ErrTokenUnknown, "redis token map not find")
+	return claims, nil
 }
 
 //func MakeTheTokenInvalid(currentClaims *Claims, platformClass string) (bool, error) {
@@ -250,12 +140,12 @@ func VerifyToken(token, uid string) (bool, error) {
 		return false, &constant.ErrTokenUnknown
 	}
 
-	log.NewDebug("", claims.UID, claims.Platform)
+	log.NewDebug("VerifyToken", claims.UID)
 	return true, nil
 }
 
-func WsVerifyToken(token, uid string, platformID string, operationID string) (bool, error, string) {
-	argMsg := "args: token: " + token + " operationID: " + operationID + " userID: " + uid + " platformID: " + constant.PlatformIDToName(utils.StringToInt(platformID))
+func WsVerifyToken(token, uid string, operationID string) (bool, error, string) {
+	argMsg := "args: token: " + token + " operationID: " + operationID + " userID: " + uid
 	claims, err := ParseToken(token, operationID)
 	if err != nil {
 		//if errors.Is(err, constant.ErrTokenUnknown) {
@@ -271,14 +161,14 @@ func WsVerifyToken(token, uid string, platformID string, operationID string) (bo
 		errMsg := "parse token err " + err.Error() + argMsg
 		return false, utils.Wrap(err, errMsg), errMsg
 	}
-	if claims.UID != uid {
-		errMsg := " uid is not same to token uid " + argMsg + " claims.UID: " + claims.UID
-		return false, utils.Wrap(constant.ErrTokenDifferentUserID, errMsg), errMsg
-	}
-	if claims.Platform != constant.PlatformIDToName(utils.StringToInt(platformID)) {
-		errMsg := " platform is not same to token platform " + argMsg + " claims platformID: " + claims.Platform
-		return false, utils.Wrap(constant.ErrTokenDifferentPlatformID, errMsg), errMsg
-	}
-	log.NewDebug(operationID, utils.GetSelfFuncName(), " check ok ", claims.UID, uid, claims.Platform)
+	// if claims.UID != uid {
+	// 	errMsg := " uid is not same to token uid " + argMsg + " claims.UID: " + claims.UID
+	// 	return false, utils.Wrap(constant.ErrTokenDifferentUserID, errMsg), errMsg
+	// }
+	// if claims.Platform != constant.PlatformIDToName(utils.StringToInt(platformID)) {
+	// 	errMsg := " platform is not same to token platform " + argMsg + " claims platformID: " + claims.Platform
+	// 	return false, utils.Wrap(constant.ErrTokenDifferentPlatformID, errMsg), errMsg
+	// }
+	log.NewDebug(operationID, utils.GetSelfFuncName(), " check ok ", claims.UID, uid)
 	return true, nil, ""
 }
