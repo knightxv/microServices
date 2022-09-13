@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"micro_servers/pkg/common/config"
 	"micro_servers/pkg/common/log"
-	pbMsg "micro_servers/pkg/proto/msg"
 	open_im_sdk "micro_servers/pkg/proto/sdk_ws"
 	"micro_servers/pkg/utils"
 
@@ -262,56 +261,6 @@ func genExceptionMessageBySeqList(seqList []uint32) (exceptionMsg []*open_im_sdk
 	return exceptionMsg
 }
 
-func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	newTime := getCurrentTimestampByMill()
-	operationID := ""
-	seqUid := getSeqUid(uid, m.MsgData.Seq)
-	filter := bson.M{"uid": seqUid}
-	var err error
-	sMsg := MsgInfo{}
-	sMsg.SendTime = sendTime
-	if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
-		return utils.Wrap(err, "")
-	}
-	err = c.FindOneAndUpdate(ctx, filter, bson.M{"$push": bson.M{"msg": sMsg}}).Err()
-	log.NewWarn(operationID, "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
-	if err != nil {
-		sChat := UserChat{}
-		sChat.UID = seqUid
-		sChat.Msg = append(sChat.Msg, sMsg)
-		if _, err = c.InsertOne(ctx, &sChat); err != nil {
-			log.NewDebug(operationID, "InsertOne failed", filter)
-			return utils.Wrap(err, "")
-		}
-	} else {
-		log.NewDebug(operationID, "FindOneAndUpdate ok", filter)
-	}
-
-	log.NewDebug(operationID, "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
-	return nil
-}
-
-//
-//func (d *DataBases) SaveUserChatListMongo2(uid string, sendTime int64, msgList []*pbMsg.MsgDataToDB) error {
-//	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-//	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-//	newTime := getCurrentTimestampByMill()
-//	operationID := ""
-//	seqUid := ""
-//	msgListToMongo := make([]MsgInfo, 0)
-//
-//	for _, m := range msgList {
-//		seqUid = getSeqUid(uid, m.MsgData.Seq)
-//		var err error
-//		sMsg := MsgInfo{}
-//		sMsg.SendTime = sendTime
-//		if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
-//			return utils.Wrap(err, "")
-//		}
-//		msgListToMongo = append(msgListToMongo, sMsg)
-//	}
 //
 //	filter := bson.M{"uid": seqUid}
 //	log.NewDebug(operationID, "filter ", seqUid)
@@ -333,63 +282,6 @@ func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgD
 //	log.NewDebug(operationID, "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
 //	return nil
 //}
-
-func (d *DataBases) SaveUserChat(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
-	var seqUid string
-	newTime := getCurrentTimestampByMill()
-	session := d.mgoSession.Clone()
-	if session == nil {
-		return errors.New("session == nil")
-	}
-	defer session.Close()
-	log.NewDebug("", "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
-	c := session.DB(config.Config.Mongo.DBDatabase).C(cChat)
-	seqUid = getSeqUid(uid, m.MsgData.Seq)
-	n, err := c.Find(bson.M{"uid": seqUid}).Count()
-	if err != nil {
-		return err
-	}
-	log.NewDebug("", "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
-	sMsg := MsgInfo{}
-	sMsg.SendTime = sendTime
-	if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
-		return err
-	}
-	if n == 0 {
-		sChat := UserChat{}
-		sChat.UID = seqUid
-		sChat.Msg = append(sChat.Msg, sMsg)
-		err = c.Insert(&sChat)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = c.Update(bson.M{"uid": seqUid}, bson.M{"$push": bson.M{"msg": sMsg}})
-		if err != nil {
-			return err
-		}
-	}
-	log.NewDebug("", "insert mgo data cost time", getCurrentTimestampByMill()-newTime)
-	return nil
-}
-
-func (d *DataBases) DelUserChat(uid string) error {
-	return nil
-	//session := d.mgoSession.Clone()
-	//if session == nil {
-	//	return errors.New("session == nil")
-	//}
-	//defer session.Close()
-	//
-	//c := session.DB(config.Config.Mongo.DBDatabase).C(cChat)
-	//
-	//delTime := time.Now().Unix() - int64(config.Config.Mongo.DBRetainChatRecords)*24*3600
-	//if err := c.Update(bson.M{"uid": uid}, bson.M{"$pull": bson.M{"msg": bson.M{"sendtime": bson.M{"$lte": delTime}}}}); err != nil {
-	//	return err
-	//}
-	//
-	//return nil
-}
 
 func (d *DataBases) DelUserChatMongo2(uid string) error {
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)

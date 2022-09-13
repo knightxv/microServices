@@ -9,6 +9,11 @@ package base_info
 //	Email                string   `protobuf:"bytes,7,opt,name=Email" json:"Email,omitempty"`
 //	Ex                   string   `protobuf:"bytes,8,opt,name=Ex" json:"Ex,omitempty"`
 
+type CommResp struct {
+	ErrCode int32  `json:"errCode"`
+	ErrMsg  string `json:"errMsg"`
+}
+
 type UserRegisterReq struct {
 	Secret   string `json:"secret" binding:"required,max=32"`
 	Platform int32  `json:"platform" binding:"required,min=1,max=7"`
