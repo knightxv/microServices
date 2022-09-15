@@ -10,11 +10,9 @@ import (
 	"context"
 	api "micro_servers/pkg/base_info"
 	"micro_servers/pkg/common/config"
-	"micro_servers/pkg/common/constant"
 	"micro_servers/pkg/common/log"
 	"micro_servers/pkg/common/token_verify"
 	"micro_servers/pkg/grpc-etcdv3/getcdv3"
-	pbRelay "micro_servers/pkg/proto/relay"
 	rpc "micro_servers/pkg/proto/user"
 	"micro_servers/pkg/utils"
 	"net/http"
@@ -173,69 +171,5 @@ func AccountCheck(c *gin.Context) {
 		resp.ResultList = []*rpc.AccountCheckResp_SingleUserStatus{}
 	}
 	log.NewInfo(req.OperationID, "AccountCheck api return", resp)
-	c.JSON(http.StatusOK, resp)
-}
-
-func GetUsersOnlineStatus(c *gin.Context) {
-	params := api.GetUsersOnlineStatusReq{}
-	if err := c.BindJSON(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": err.Error()})
-		return
-	}
-	req := &pbRelay.GetUsersOnlineStatusReq{}
-	utils.CopyStructFields(req, &params)
-
-	var ok bool
-	var errInfo string
-	ok, req.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.OperationID)
-	if !ok {
-		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-
-	log.NewInfo(params.OperationID, "GetUsersOnlineStatus args ", req.String())
-	var wsResult []*pbRelay.GetUsersOnlineStatusResp_SuccessResult
-	var respResult []*pbRelay.GetUsersOnlineStatusResp_SuccessResult
-	flag := false
-	grpcCons := getcdv3.GetConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImRelayName)
-	for _, v := range grpcCons {
-		client := pbRelay.NewRelayClient(v)
-		reply, err := client.GetUsersOnlineStatus(context.Background(), req)
-		if err != nil {
-			log.NewError(params.OperationID, "GetUsersOnlineStatus rpc  err", req.String(), err.Error())
-			continue
-		} else {
-			if reply.ErrCode == 0 {
-				wsResult = append(wsResult, reply.SuccessResult...)
-			}
-		}
-	}
-	log.NewInfo(params.OperationID, "call GetUsersOnlineStatus rpc server is success", wsResult)
-	//Online data merge of each node
-	for _, v1 := range params.UserIDList {
-		flag = false
-		temp := new(pbRelay.GetUsersOnlineStatusResp_SuccessResult)
-		for _, v2 := range wsResult {
-			if v2.UserID == v1 {
-				flag = true
-				temp.UserID = v1
-				temp.Status = constant.OnlineStatus
-				temp.DetailPlatformStatus = append(temp.DetailPlatformStatus, v2.DetailPlatformStatus...)
-			}
-
-		}
-		if !flag {
-			temp.UserID = v1
-			temp.Status = constant.OfflineStatus
-		}
-		respResult = append(respResult, temp)
-	}
-	resp := api.GetUsersOnlineStatusResp{CommResp: api.CommResp{ErrCode: 0, ErrMsg: ""}, SuccessResult: respResult}
-	if len(respResult) == 0 {
-		resp.SuccessResult = []*pbRelay.GetUsersOnlineStatusResp_SuccessResult{}
-	}
-	log.NewInfo(req.OperationID, "GetUsersOnlineStatus api return", resp)
 	c.JSON(http.StatusOK, resp)
 }
